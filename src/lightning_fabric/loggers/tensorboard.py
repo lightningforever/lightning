@@ -144,7 +144,7 @@ class TensorBoardLogger(Logger):
         constructor's version parameter instead of ``None`` or an int.
         """
         version = self.version if isinstance(self.version, str) else f"version_{self.version}"
-        log_dir = os.path.join(self.root_dir, version)
+        log_dir = os.path.join(self.root_dir, self.name, version)
         if isinstance(self.sub_dir, str):
             log_dir = os.path.join(log_dir, self.sub_dir)
         log_dir = os.path.expandvars(log_dir)
