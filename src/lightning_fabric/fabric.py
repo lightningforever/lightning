@@ -599,8 +599,8 @@ class Fabric:
         Args:
             name: The name of the metric to log.
             value: The metric value to collect.
-            step: Optional step number. Most Logger implementations auto-increment this value by one with every
-                log call.
+            step: Optional step number. Most Logger implementations auto-increment the step value by one with every
+                log call. You can specify your own value here.
         """
         self.log_dict(metrics={name: value}, step=step)
 
@@ -610,7 +610,7 @@ class Fabric:
         Args:
             metrics: A dictionary where the key is the name of the metric and the value the scalar to be logged.
             step: Optional step number. Most Logger implementations auto-increment this value by one with every
-                log call.
+                log call. You can specify your own value here.
         """
         for logger in self._loggers:
             logger.log_metrics(metrics=metrics, step=step)
