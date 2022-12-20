@@ -13,14 +13,14 @@
 # limitations under the License.
 
 from argparse import Namespace
-from typing import Any, Dict, List, Mapping, MutableMapping, Union
+from typing import Any, Dict, Mapping, MutableMapping, Optional, Union
 
 import numpy as np
 import torch
 from torch import Tensor
 
 
-def _convert_params(params: Union[Dict[str, Any], Namespace]) -> Dict[str, Any]:
+def _convert_params(params: Optional[Union[Dict[str, Any], Namespace]]) -> Dict[str, Any]:
     """Ensure parameters are a dict or convert to dict if necessary.
 
     Args:
@@ -57,7 +57,7 @@ def _sanitize_callable_params(params: Dict[str, Any]) -> Dict[str, Any]:
                 if callable(_val):
                     return val.__name__
                 return _val
-            # TODO(fabric): specify the possible exception
+            # todo: specify the possible exception
             except Exception:
                 return getattr(val, "__name__", None)
         return val
@@ -141,11 +141,3 @@ def _add_prefix(
         metrics = {f"{prefix}{separator}{k}": v for k, v in metrics.items()}
 
     return metrics
-
-
-def _version(loggers: List[Any], separator: str = "_") -> Union[int, str]:
-    if len(loggers) == 1:
-        return loggers[0].version
-    else:
-        # Concatenate versions together, removing duplicates and preserving order
-        return separator.join(dict.fromkeys(str(logger.version) for logger in loggers))
