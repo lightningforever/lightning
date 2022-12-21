@@ -15,6 +15,7 @@
 import logging
 import os
 from argparse import Namespace
+from pathlib import Path
 from typing import Any, Dict, Mapping, Optional, TYPE_CHECKING, Union
 
 import numpy as np
@@ -46,13 +47,11 @@ class TensorBoardLogger(Logger):
     Log to local file system in `TensorBoard <https://www.tensorflow.org/tensorboard>`_ format.
 
     Implemented using :class:`~tensorboardX.SummaryWriter`. Logs are saved to
-    ``os.path.join(root_dir, name, version)``. This is the recommended logger in Lightning Fabric.
+    ``os.path.join(root_dir, version)``. This is the recommended logger in Lightning Fabric.
 
     Args:
-        root_dir: The root directory in which all your experiments with different names and versions will be stored.
-        name: Experiment name. Defaults to ``'lightning_logs'``. If it is the empty string then no per-experiment
-            subdirectory is used.
-        version: Experiment version. If version is not specified the logger inspects the save
+        root_dir: The root directory in which all your experiments with different versions will be stored.
+        version: Experiment version. If version is not specified the logger inspects the root
             directory for existing versions, then automatically assigns the next available version.
             If it is a string then it is used as the run-specific subdirectory name,
             otherwise ``'version_${version}'`` is used.
@@ -60,8 +59,8 @@ class TensorBoardLogger(Logger):
             called without a metric (otherwise calls to ``log_hyperparams`` without a metric are ignored).
         prefix: A string to put at the beginning of all metric keys.
         sub_dir: Sub-directory to group TensorBoard logs. If a ``sub_dir`` argument is passed
-            then logs are saved in ``/root_dir/name/version/sub_dir/``. Defaults to ``None`` in which case
-            logs are saved in ``/root_dir/name/version/``.
+            then logs are saved in ``/root_dir/version/sub_dir/``. Defaults to ``None`` in which case
+            logs are saved in ``/root_dir/version/``.
         \**kwargs: Additional arguments used by :class:`tensorboardX.SummaryWriter` can be passed as keyword
             arguments in this logger. To automatically flush to disk, `max_queue` sets the size
             of the queue for pending logs before flushing. `flush_secs` determines how many seconds
@@ -72,7 +71,7 @@ class TensorBoardLogger(Logger):
 
         from lightning.fabric.loggers import TensorBoardLogger
 
-        logger = TensorBoardLogger("path/to/logs/rot", name="my_model")
+        logger = TensorBoardLogger("path/to/logs/my_model")
         logger.log_hyperparams({"epochs": 5, "optimizer": "Adam"})
         logger.log_metrics({"acc": 0.75})
         logger.finalize("success")
@@ -81,8 +80,7 @@ class TensorBoardLogger(Logger):
 
     def __init__(
         self,
-        root_dir: _PATH,
-        name: Optional[str] = "lightning_logs",
+        root_dir: _PATH = "lightning_logs",
         version: Optional[Union[int, str]] = None,
         default_hp_metric: bool = True,
         prefix: str = "",
@@ -96,7 +94,6 @@ class TensorBoardLogger(Logger):
         super().__init__()
         root_dir = os.fspath(root_dir)
         self._root_dir = root_dir
-        self._name = name or ""
         self._version = version
         self._sub_dir = None if sub_dir is None else os.fspath(sub_dir)
 
@@ -109,12 +106,9 @@ class TensorBoardLogger(Logger):
 
     @property
     def name(self) -> str:
-        """Get the name of the experiment.
-
-        Returns:
-            The name of the experiment.
+        """Returns the name of the experiment, which is the name of the root directory path (last part of the path).
         """
-        return self._name
+        return Path(self._root_dir).absolute().name
 
     @property
     def version(self) -> Union[int, str]:
@@ -144,7 +138,7 @@ class TensorBoardLogger(Logger):
         constructor's version parameter instead of ``None`` or an int.
         """
         version = self.version if isinstance(self.version, str) else f"version_{self.version}"
-        log_dir = os.path.join(self.root_dir, self.name, version)
+        log_dir = os.path.join(self.root_dir, version)
         if isinstance(self.sub_dir, str):
             log_dir = os.path.join(log_dir, self.sub_dir)
         log_dir = os.path.expandvars(log_dir)
@@ -277,7 +271,7 @@ class TensorBoardLogger(Logger):
             self.experiment.close()
 
     def _get_next_version(self) -> int:
-        save_dir = os.path.join(self.root_dir, self.name)
+        save_dir = self.root_dir
 
         try:
             listdir_info = self._fs.listdir(save_dir)
